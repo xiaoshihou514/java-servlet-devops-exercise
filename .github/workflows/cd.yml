@@ -1,0 +1,33 @@
+name: CI and CD
+
+on:
+  push:
+
+jobs:
+  cicd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Maven Compile
+        run: mvn compile
+
+      - name: Maven Test
+        run: mvn test
+
+      - name: Deploy
+        run: |
+          curl -fsSL "https://tsuru.io/get" | bash -s -- -b ..
+          ../tsuru version || true
+          ../tsuru target add example_target $TSURU_TARGET -s
+          ../tsuru target list
+          ../tsuru app deploy --app $TSURU_APPNAME --dockerfile .
+        env:
+          TSURU_TOKEN: ${{ secrets.TSURU_TOKEN }}
+          TSURU_TARGET: ${{ secrets.TSURU_TARGET }}
+          TSURU_APPNAME: ${{ secrets.TSURU_APPNAME }}
